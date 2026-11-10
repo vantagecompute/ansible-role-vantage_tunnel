@@ -17,6 +17,13 @@ The Vantage Compute `v8x` tool applies this role on every Slurm single-node depl
 - slurmrestd on the node at `127.0.0.1:6820`, which is where the proxy forwards.
 - Outbound HTTPS from the node to the artifact CDN, the Keycloak realm and Vantage.
 
+## Terms
+
+- **slurmrestd** is Slurm's REST API service. The proxy forwards requests to it.
+- **Keycloak and OIDC**: Keycloak is the sign-in service Vantage uses, and OIDC is the protocol it speaks. The cluster signs in with a client ID and secret and receives a short-lived token.
+- **Audience**: the cluster name written inside a token. The proxy rejects a token whose audience is another cluster.
+- **Tunnel**: an outbound connection from the node to Vantage, so Vantage can reach the node without an inbound firewall rule.
+
 ## Variables
 
 Required (the role fails when one is empty):
