@@ -1,0 +1,56 @@
+---
+# Check what the role left on the host. Test use only.
+- name: Verify the vantage_tunnel result
+  hosts: all
+  become: true
+  tasks:
+    - name: Look at the settings files
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /etc/vantage/vantage-auth-proxy/env
+        - /etc/vantage/vantage-tunnel-client/env
+      register: files
+
+    - name: Check they exist and are root-only
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.mode == '0600'
+          - item.stat.pw_name == 'root'
+      loop: "{{ files.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Read the tunnel client settings
+      ansible.builtin.slurp:
+        src: /etc/vantage/vantage-tunnel-client/env
+      register: client_env
+      no_log: true
+
+    - name: Check the secret is escaped for systemd
+      ansible.builtin.assert:
+        that: expected_line in (client_env.content | b64decode)
+      vars:
+        # The test secret is: a "quoted" \ secret
+        expected_line: 'OIDC_CLIENT_SECRET="a \"quoted\" \\ secret"'
+      no_log: true
+
+    - name: Read the auth proxy settings
+      ansible.builtin.slurp:
+        src: /etc/vantage/vantage-auth-proxy/env
+      register: proxy_env
+
+    - name: Check the proxy listens on the loopback address only
+      ansible.builtin.assert:
+        that: >-
+          'VANTAGE_AUTHPROXY_LISTEN="127.0.0.1:8888"' in (proxy_env.content | b64decode)
+
+    - name: Check both services are running
+      ansible.builtin.command: "systemctl is-active {{ item }}"
+      loop:
+        - vantage-auth-proxy.service
+        - vantage-tunnel-client.service
+      register: active
+      changed_when: false
+      failed_when: active.stdout != 'active'

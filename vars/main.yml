@@ -1,0 +1,13 @@
+---
+# Internal constants. These are not part of the role's interface.
+vantage_tunnel_realm_path: "/realms/vantage"
+vantage_tunnel_token_path: "/protocol/openid-connect/token"
+vantage_tunnel_arch: "linux-amd64"
+vantage_tunnel_staging_dir: "/var/cache/vantage-tunnel"
+
+# The auth proxy configuration is fixed on purpose: it listens on the loopback
+# address only, forwards to slurmrestd on this node, and checks the Vantage
+# token on every request. There are no variables for it. The tunnel client
+# delivers platform traffic to the same address.
+vantage_tunnel_proxy_listen_host: "127.0.0.1"
+vantage_tunnel_proxy_listen_port: 8888

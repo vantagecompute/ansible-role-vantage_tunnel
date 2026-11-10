@@ -1,0 +1,20 @@
+---
+galaxy_info:
+  role_name: vantage_tunnel
+  namespace: vantagecompute
+  author: Vantage Compute
+  description: >-
+    Installs the Vantage tunnel client and the Vantage auth proxy on a Slurm
+    node, so Vantage can reach its slurmrestd through a token-checking proxy.
+  company: Vantage Compute
+  license: GPL-3.0-or-later
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - resolute # 26.04
+  galaxy_tags:
+    - vantage
+    - slurm
+    - tunnel
+dependencies: []
