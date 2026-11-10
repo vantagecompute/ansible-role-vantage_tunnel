@@ -5,7 +5,7 @@ An Ansible role that installs the Vantage tunnel client and the Vantage auth pro
 - **vantage-auth-proxy** validates the Keycloak bearer token (signature, issuer, expiry and this cluster's audience), strips inbound `x-slurm-*` headers, and forwards to slurmrestd on the same node.
 - **vantage-tunnel-client** connects the node to Vantage and delivers platform traffic to the proxy.
 
-The Vantage Compute `v8x` tool applies this role on every Slurm single-node deployment, with no opt-out. You can apply the same role to your own nodes. It is independent of the `vantage_agents` role and can be applied on its own.
+The Vantage Compute `v8x` tool is meant to apply this role on every Slurm single-node deployment, with no opt-out; that `v8x` change is not made yet. You can apply the same role to your own nodes today. It is independent of the `vantage_agents` role and can be applied on its own.
 
 > Working name: the repository name for this role is provisional.
 
@@ -22,6 +22,10 @@ The Vantage Compute `v8x` tool applies this role on every Slurm single-node depl
 - **slurmrestd** is Slurm's REST API service. The proxy forwards requests to it.
 - **Keycloak and OIDC**: Keycloak is the sign-in service Vantage uses, and OIDC is the protocol it speaks. The cluster signs in with a client ID and secret and receives a short-lived token.
 - **Audience**: the cluster name written inside a token. The proxy rejects a token whose audience is another cluster.
+- **Bearer token**: the login token a client sends in an `Authorization: Bearer ...` header. The proxy checks it before anything reaches Slurm.
+- **x-slurm-* headers**: request headers that tell Slurm which user is calling. The proxy removes any it receives, so a caller cannot pretend to be someone else.
+- **Loopback**: the address `127.0.0.1`, reachable only from the same machine. The proxy listens only there.
+- **systemd-setup**: a command each Vantage binary has that installs itself as a systemd service (its own user, directories and unit file).
 - **Tunnel**: an outbound connection from the node to Vantage, so Vantage can reach the node without an inbound firewall rule.
 
 ## Variables
@@ -66,6 +70,8 @@ The auth proxy has no other settings. Its configuration is fixed and deployed as
 ## How it works
 
 For each binary the role gets a Keycloak token with the cluster's credentials, downloads the binary and its `.sha256` file from the artifact CDN, and checks the checksum. When `/usr/bin` holds a different build it runs the binary's own `systemd-setup` command, which creates the service user, directories and unit. The role writes the settings files (root-only, `0600`), then starts the proxy first and the tunnel client second. A second run changes nothing. Upgrading means changing the version variable and running again.
+
+The role records what it installed, one line per binary (name, requested version, sha256), in `/etc/vantage/artifacts.lock`, the same file and format `v8x` writes.
 
 The checksum comes from the same CDN as the binary, so it catches a damaged download, not a compromised CDN. Tasks that handle secrets use `no_log`.
 

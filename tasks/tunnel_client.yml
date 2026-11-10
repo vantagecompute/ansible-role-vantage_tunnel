@@ -13,6 +13,12 @@
   changed_when: true
   notify: Restart vantage-tunnel-client
 
+- name: Record the installed build
+  ansible.builtin.include_tasks: record_lock.yml
+  vars:
+    vantage_tunnel_binary_name: vantage-tunnel-client
+    vantage_tunnel_binary_version: "{{ vantage_tunnel_client_version }}"
+
 - name: Write the tunnel client settings
   ansible.builtin.template:
     src: vantage-tunnel-client.env.j2

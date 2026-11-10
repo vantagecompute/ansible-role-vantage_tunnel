@@ -5,7 +5,7 @@
 
 - name: Get a Keycloak token for the artifact CDN
   ansible.builtin.uri:
-    url: "{{ vantage_tunnel_oidc_base_url | trim('/') }}{{ vantage_tunnel_realm_path }}{{ vantage_tunnel_token_path }}"
+    url: "{{ vantage_tunnel_oidc_issuer }}{{ vantage_tunnel_token_path }}"
     method: POST
     body_format: form-urlencoded
     body:

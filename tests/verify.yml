@@ -73,6 +73,17 @@
           - (env_files.results[1].content | b64decode) is search('(?m)^OIDC_CLIENT_ID="')
       no_log: true
 
+    - name: Read the lock file
+      ansible.builtin.slurp:
+        src: /etc/vantage/artifacts.lock
+      register: lock_file
+
+    - name: Check it has one line per installed binary, with a sha256
+      ansible.builtin.assert:
+        that:
+          - (lock_file.content | b64decode) is search('(?m)^vantage-auth-proxy \\S+ [0-9a-f]{64}$')
+          - (lock_file.content | b64decode) is search('(?m)^vantage-tunnel-client \\S+ [0-9a-f]{64}$')
+
     - name: Check both services are running
       ansible.builtin.command: "systemctl is-active {{ item }}"
       loop:
