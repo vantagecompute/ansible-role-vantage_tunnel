@@ -46,6 +46,33 @@
         that: >-
           'VANTAGE_AUTHPROXY_LISTEN="127.0.0.1:8888"' in (proxy_env.content | b64decode)
 
+    - name: Read every settings file
+      ansible.builtin.slurp:
+        src: "{{ item }}"
+      loop:
+        - /etc/vantage/vantage-auth-proxy/env
+        - /etc/vantage/vantage-tunnel-client/env
+      register: env_files
+      no_log: true
+
+    - name: Check every line of each settings file is a comment or KEY="value"
+      ansible.builtin.assert:
+        that: >-
+          (item.content | b64decode).splitlines()
+          | reject('match', '^(#.*|[A-Z][A-Z0-9_]*=".*")$') | list | length == 0
+        fail_msg: "A line in {{ item.item }} is neither a comment nor KEY=\"value\"."
+      loop: "{{ env_files.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      no_log: true
+
+    - name: Check the required settings are present as their own lines
+      ansible.builtin.assert:
+        that:
+          - (env_files.results[0].content | b64decode) is search('(?m)^VANTAGE_AUTHPROXY_CLUSTER="')
+          - (env_files.results[1].content | b64decode) is search('(?m)^OIDC_CLIENT_ID="')
+      no_log: true
+
     - name: Check both services are running
       ansible.builtin.command: "systemctl is-active {{ item }}"
       loop:
