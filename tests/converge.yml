@@ -1,0 +1,14 @@
+---
+# Apply the role against the stub CDN. Test use only.
+- name: Apply the vantage_tunnel role
+  hosts: all
+  become: true
+  vars:
+    vantage_tunnel_client_id: test-cluster
+    vantage_tunnel_client_secret: 'a "quoted" \ secret'
+    vantage_tunnel_cluster_name: test
+    vantage_tunnel_oidc_base_url: http://127.0.0.1:8099
+    vantage_tunnel_artifacts_url: http://127.0.0.1:8099
+    vantage_tunnel_vantage_url: https://vantage.example.test
+  roles:
+    - role: "{{ playbook_dir }}/.."

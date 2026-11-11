@@ -1,0 +1,16 @@
+---
+# Install the Vantage auth proxy and tunnel client on a node.
+# Run it with become: true. The proxy is installed first, because the tunnel
+# client delivers platform traffic to it.
+
+- name: Check the host and the inputs
+  ansible.builtin.import_tasks: preflight.yml
+
+- name: Get a token for the artifact CDN
+  ansible.builtin.import_tasks: token.yml
+
+- name: Install the auth proxy
+  ansible.builtin.import_tasks: auth_proxy.yml
+
+- name: Install the tunnel client
+  ansible.builtin.import_tasks: tunnel_client.yml

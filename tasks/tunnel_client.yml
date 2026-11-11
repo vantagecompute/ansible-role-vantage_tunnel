@@ -1,0 +1,45 @@
+---
+# vantage-tunnel-client: installed by its own systemd-setup, as v8x does.
+
+- name: Fetch the vantage-tunnel-client binary
+  ansible.builtin.include_tasks: fetch_binary.yml
+  vars:
+    vantage_tunnel_binary_name: vantage-tunnel-client
+    vantage_tunnel_binary_version: "{{ vantage_tunnel_client_version }}"
+
+- name: Install vantage-tunnel-client as a service
+  ansible.builtin.command: "{{ vantage_tunnel_binary_staged }} systemd-setup"
+  when: vantage_tunnel_binary_needs_install | bool
+  changed_when: true
+  notify: Restart vantage-tunnel-client
+
+- name: Record the installed build
+  ansible.builtin.include_tasks: record_lock.yml
+  vars:
+    vantage_tunnel_binary_name: vantage-tunnel-client
+    vantage_tunnel_binary_version: "{{ vantage_tunnel_client_version }}"
+
+- name: Write the tunnel client settings
+  ansible.builtin.template:
+    src: vantage-tunnel-client.env.j2
+    dest: /etc/vantage/vantage-tunnel-client/env
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  notify: Restart vantage-tunnel-client
+
+- name: Turn off the image's path unit, so the enabled service alone starts it
+  ansible.builtin.include_tasks: disable_image_path_unit.yml
+  vars:
+    vantage_tunnel_path_unit: vantage-tunnel-client.path
+
+- name: Flush handlers so the client restarts once
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start vantage-tunnel-client
+  ansible.builtin.systemd_service:
+    name: vantage-tunnel-client
+    enabled: true
+    state: started
+    daemon_reload: true

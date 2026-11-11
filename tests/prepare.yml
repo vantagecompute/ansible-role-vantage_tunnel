@@ -1,0 +1,31 @@
+---
+# Start the stub CDN on a bare Ubuntu 26.04 VM. Test use only.
+- name: Prepare the stub artifact server
+  hosts: all
+  become: true
+  tasks:
+    - name: Copy the stub CDN
+      ansible.builtin.copy:
+        src: fixtures/stub_cdn.py
+        dest: /usr/local/bin/stub_cdn.py
+        mode: "0755"
+
+    - name: Run the stub CDN as a service
+      ansible.builtin.copy:
+        content: |
+          [Unit]
+          Description=Stub Vantage artifact CDN
+          [Service]
+          ExecStart=/usr/bin/python3 /usr/local/bin/stub_cdn.py 8099
+          Restart=always
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/stub-cdn.service
+        mode: "0644"
+
+    - name: Start the stub CDN
+      ansible.builtin.systemd_service:
+        name: stub-cdn
+        enabled: true
+        state: started
+        daemon_reload: true

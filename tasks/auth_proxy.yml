@@ -1,0 +1,45 @@
+---
+# vantage-auth-proxy: installed by its own systemd-setup, as v8x does. Its
+# configuration is fixed (see vars/main.yml and the settings template).
+
+- name: Fetch the vantage-auth-proxy binary
+  ansible.builtin.include_tasks: fetch_binary.yml
+  vars:
+    vantage_tunnel_binary_name: vantage-auth-proxy
+    vantage_tunnel_binary_version: "{{ vantage_tunnel_auth_proxy_version }}"
+
+- name: Install vantage-auth-proxy as a service
+  ansible.builtin.command: "{{ vantage_tunnel_binary_staged }} systemd-setup"
+  when: vantage_tunnel_binary_needs_install | bool
+  changed_when: true
+  notify: Restart vantage-auth-proxy
+
+- name: Record the installed build
+  ansible.builtin.include_tasks: record_lock.yml
+  vars:
+    vantage_tunnel_binary_name: vantage-auth-proxy
+    vantage_tunnel_binary_version: "{{ vantage_tunnel_auth_proxy_version }}"
+
+- name: Write the auth proxy settings
+  ansible.builtin.template:
+    src: vantage-auth-proxy.env.j2
+    dest: /etc/vantage/vantage-auth-proxy/env
+    owner: root
+    group: root
+    mode: "0600"
+  notify: Restart vantage-auth-proxy
+
+- name: Turn off the image's path unit, so the enabled service alone starts it
+  ansible.builtin.include_tasks: disable_image_path_unit.yml
+  vars:
+    vantage_tunnel_path_unit: vantage-auth-proxy.path
+
+- name: Flush handlers so the proxy restarts once
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable and start vantage-auth-proxy
+  ansible.builtin.systemd_service:
+    name: vantage-auth-proxy
+    enabled: true
+    state: started
+    daemon_reload: true

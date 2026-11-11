@@ -1,0 +1,27 @@
+---
+# Fail early, with a clear message, when the host or the inputs are wrong.
+
+- name: Check the platform
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] == 'Ubuntu'
+      - ansible_facts['distribution_version'] is version('26.04', '==')
+      - ansible_facts['architecture'] == 'x86_64'
+    fail_msg: >-
+      This role supports Ubuntu 26.04 on x86_64 only. This host is
+      {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }}
+      on {{ ansible_facts['architecture'] }}.
+    quiet: true
+
+- name: Check that the required variables are set
+  ansible.builtin.assert:
+    that: (lookup('ansible.builtin.vars', item) | string | length) > 0
+    fail_msg: "The variable {{ item }} is required and is empty."
+    quiet: true
+  loop:
+    - vantage_tunnel_client_id
+    - vantage_tunnel_client_secret
+    - vantage_tunnel_cluster_name
+    - vantage_tunnel_oidc_base_url
+    - vantage_tunnel_vantage_url
+  no_log: true

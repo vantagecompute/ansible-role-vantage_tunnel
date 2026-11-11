@@ -1,0 +1,20 @@
+---
+# Internal constants. These are not part of the role's interface.
+vantage_tunnel_realm_path: "/realms/vantage"
+vantage_tunnel_token_path: "/protocol/openid-connect/token"
+vantage_tunnel_arch: "linux-amd64"
+# One line per installed binary: name, requested version, sha256. Same file and
+# format that v8x writes, so a host shows what is installed and from which build.
+vantage_tunnel_lock_file: "/etc/vantage/artifacts.lock"
+# The Keycloak realm URL, built once.
+vantage_tunnel_oidc_issuer: "{{ vantage_tunnel_oidc_base_url | trim('/') }}{{ vantage_tunnel_realm_path }}"
+vantage_tunnel_staging_dir: "/var/cache/vantage-tunnel"
+
+# The auth proxy configuration is fixed on purpose: it listens on the loopback
+# address only, forwards to slurmrestd on this node, and checks the Vantage
+# token on every request. There are no variables for it. The tunnel client
+# delivers platform traffic to the same address.
+vantage_tunnel_proxy_listen_host: "127.0.0.1"
+vantage_tunnel_proxy_listen_port: 8888
+# Where the tunnel client delivers platform traffic: the proxy, on this node.
+vantage_tunnel_proxy_forward_host: "localhost"

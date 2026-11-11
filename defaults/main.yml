@@ -1,0 +1,25 @@
+---
+# Inputs for the vantage_tunnel role. The role refuses to run when a required
+# one is empty (see tasks/preflight.yml).
+
+# Required: the cluster's Keycloak client. The client id is the cluster's
+# audience, and the tunnel client signs in with it.
+vantage_tunnel_client_id: ""
+vantage_tunnel_client_secret: ""
+
+# Required: the cluster's name in Vantage.
+vantage_tunnel_cluster_name: ""
+
+# Required: the Keycloak base URL, without the /realms/vantage suffix,
+# for example https://auth.vantagecompute.ai
+vantage_tunnel_oidc_base_url: ""
+
+# Required: the URL of the Vantage platform the tunnel client connects to.
+vantage_tunnel_vantage_url: ""
+
+# Optional: where the binaries come from.
+vantage_tunnel_artifacts_url: "https://vantage-artifacts.vantagecompute.ai"
+
+# Optional: pin versions. "latest" can change under you, so pin in production.
+vantage_tunnel_auth_proxy_version: "latest"
+vantage_tunnel_client_version: "latest"

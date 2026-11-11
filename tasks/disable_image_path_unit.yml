@@ -1,0 +1,17 @@
+---
+# The Vantage image enables a .path unit next to some services. Once a service is
+# installed by its own systemd-setup, the enabled service alone starts it, so
+# turn the image's path unit off. Takes:
+#   vantage_tunnel_path_unit   for example vantage-auth-proxy.path
+
+- name: "Look for the image's path unit {{ vantage_tunnel_path_unit }}"
+  ansible.builtin.stat:
+    path: "/usr/lib/systemd/system/{{ vantage_tunnel_path_unit }}"
+  register: vantage_tunnel_path_unit_file
+
+- name: "Turn off the image's path unit {{ vantage_tunnel_path_unit }}"
+  ansible.builtin.systemd_service:
+    name: "{{ vantage_tunnel_path_unit }}"
+    enabled: false
+    state: stopped
+  when: vantage_tunnel_path_unit_file.stat.exists
