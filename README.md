@@ -1,20 +1,28 @@
 # vantage_tunnel
 
-An Ansible role that installs the Vantage tunnel client and the Vantage auth proxy on a Slurm node, so Vantage can reach the node's slurmrestd through a proxy that checks the Vantage token on every request.
+An Ansible role that installs the Vantage tunnel client and the Vantage auth proxy on a node, so Vantage can reach a service on that node through a proxy that checks the Vantage token on every request. The usual case is a Slurm node, where that service is slurmrestd, but the node does not have to run Slurm.
 
-- **vantage-auth-proxy** validates the Keycloak bearer token (signature, issuer, expiry and this cluster's audience), strips inbound `x-slurm-*` headers, and forwards to slurmrestd on the same node.
+- **vantage-auth-proxy** validates the Keycloak bearer token (signature, issuer, expiry and this cluster's audience), strips inbound `x-slurm-*` headers, and forwards to `127.0.0.1:6820` on the same node, which is where slurmrestd listens.
 - **vantage-tunnel-client** connects the node to Vantage and delivers platform traffic to the proxy.
 
-The Vantage Compute `v8x` tool is meant to apply this role on every Slurm single-node deployment, with no opt-out; that `v8x` change is not made yet. You can apply the same role to your own nodes today. It is independent of the `vantage_agents` role and can be applied on its own.
+The Vantage Compute `v8x` tool applies this role, together with `vantage_agents`, when it deploys the `slurm-single-qemu` application. You can apply the same role to your own nodes. It is independent of the `vantage_agents` role and can be applied on its own.
 
-> Working name: the repository name for this role is provisional.
+## Install
+
+```bash
+ansible-galaxy role install vantagecompute.vantage_tunnel
+```
+
+Pin an exact version in production: `ansible-galaxy role install vantagecompute.vantage_tunnel,X.Y.Z`. A version is a git tag of this repository.
+
+Full documentation is at https://docs.vantagecompute.ai/developer/ansible-vantage-tunnel/ and its source is in `docusaurus/`.
 
 ## Requirements
 
 - Ubuntu 26.04 on x86_64. Other platforms are not supported yet.
 - Ansible 2.16 or newer on the control machine, and `become: true` on the play.
 - A Vantage cluster and its Keycloak client credentials.
-- slurmrestd on the node at `127.0.0.1:6820`, which is where the proxy forwards.
+- A service on the node at `127.0.0.1:6820`, which is where the proxy forwards. On a Slurm node that is slurmrestd. The role does not check for it, so it applies to a node without Slurm too; requests through the tunnel then succeed only when something listens there.
 - Outbound HTTPS from the node to the artifact CDN, the Keycloak realm and Vantage.
 
 ## Terms
@@ -48,7 +56,7 @@ Optional:
 | `vantage_tunnel_auth_proxy_version` | `latest` | Auth proxy version. Pin it in production. |
 | `vantage_tunnel_client_version` | `latest` | Tunnel client version. Pin it in production. |
 
-The auth proxy has no other settings. Its configuration is fixed and deployed as is: it listens on `127.0.0.1:8888` only, forwards to slurmrestd on the same node, and checks the Vantage token first. Any other configuration is unsupported.
+The auth proxy has no other settings. Its configuration is fixed and deployed as is: it listens on `127.0.0.1:8888` only, forwards to `127.0.0.1:6820` on the same node, and checks the Vantage token first. Any other configuration is unsupported.
 
 ## Example
 
@@ -60,11 +68,11 @@ The auth proxy has no other settings. Its configuration is fixed and deployed as
     vantage_tunnel_client_secret: "{{ vault_vantage_client_secret }}"
     vantage_tunnel_cluster_name: my-cluster
     vantage_tunnel_oidc_base_url: https://auth.vantagecompute.ai
-    vantage_tunnel_vantage_url: https://vantage.example.com
+    vantage_tunnel_vantage_url: https://app.vantagecompute.ai
     vantage_tunnel_auth_proxy_version: "X.Y.Z"
     vantage_tunnel_client_version: "X.Y.Z"
   roles:
-    - vantage_tunnel
+    - vantagecompute.vantage_tunnel
 ```
 
 ## How it works
@@ -75,7 +83,9 @@ The role records what it installed, one line per binary (name, requested version
 
 The checksum comes from the same CDN as the binary, so it catches a damaged download, not a compromised CDN. Tasks that handle secrets use `no_log`.
 
-## Testing
+## Testing and releasing
+
+`just release X.Y.Z` tags a release from an up-to-date `main` and pushes the tag; CI then publishes that version to Ansible Galaxy and deploys the documentation.
 
 `just lint` runs ansible-lint. `just test <inventory>` runs the role twice against a throwaway Ubuntu 26.04 host that you point it at, with a stub token endpoint and artifact server, and checks that the second run changes nothing. It proves the Ansible logic only. It does not prove the real binaries or the real `systemd-setup`; for that, apply the role to a host with a real cluster.
 
